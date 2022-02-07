@@ -77,8 +77,6 @@ def echo_env(env):
 		print('\t{0:<26} = {1}'.format(key, val))
 	print('')
 
-
-
 def echo_cmd(exe, proj, opt):
 	print('\t%s %s' % (exe, proj))
 	for o in opt:
@@ -105,83 +103,77 @@ def env(args, remainder):
 	echo_env(wkspace)
 	echo_env(project)
 	echo_env(engine)
+	return ''
 
 # -------------------------------------------------------- "build" command delegate
 def build(args, remainder):
-	batch = engine['build_bat']
-
-	target = project['name']
+	cmd = ''
+	cmd += engine['build_bat'] + ' '
 	if args.target.lower() == 'game':
-		target +=''
+		cmd += project['name'] + ' '
 	elif args.target.lower() == 'client':
-		target += 'Client'
+		cmd += project['name'] + 'Client' + ' '
 	elif args.target.lower() == 'server':
-		target += 'Server'
-	elif args.target.lower() == 'editor':
-		target += 'Editor'
-	else:
-		print('invalid target specified')
-		return ''
-
-	proj = project['uproject']
+		cmd += project['name'] + 'Server' + ' '
+	else :
+		cmd += project['name'] + 'Editor' + ' '
+	cmd += args.platform + ' '
+	cmd += args.configuration + ' '
+	cmd += project['uproject'] + ' '
 
 	opt = [
 		'-waitMutex',
 		'-NoHotReload',
 		' '.join(remainder),
 	]
-
-	cmd = '%s %s %s %s %s %s' % (
-		batch, 
-		target, 
-		args.platform, 
-		args.configuration, 
-		proj, 
-		' '.join(opt)
-		)
-	return cmd
-
+	return '%s%s' % (cmd, ' '.join(opt))
 
 # -------------------------------------------------------- "editor" command delegate
 def editor(args, remainder):
-	#exe = engine['unreal_editor_exe']
-	exe = engine['unreal_editor_cmd_exe']
-	proj = project['uproject']
+	cmd = ''
+	cmd += engine['unreal_editor_cmd_exe'] + ' '
+	cmd += project['uproject'] + ' '
 	opt = [
 		'-log',
 		'-fullcrashdumpalways',
 		'-ddc=noshared',
 		' '.join(remainder),
 	]
-	cmd = '%s %s %s' % (exe, proj, ' '.join(opt))
-	return cmd
+	return '%s%s' % (cmd, ' '.join(opt))
 
 # -------------------------------------------------------- "server" command delegate
 def server(args, remainder):
-	exe = is_binary(args.binary)
-	if not is_exists(exe):
-		return
+	cmd = ''
+	if args.binary:
+		cmd += 'TODO' + ' '
+	else:
+		cmd += engine['unreal_editor_cmd_exe'] + ' ' + project['uproject'] + ' '
+	cmd += args.map + ' '
 
 	opt = [
-		'-log',
 		'-server',
 		'-game',
 		'-fullcrashdumpalways',
 		'-noailogging',
+		'-log',
 		' '.join(remainder)
 	]
-	return exe, opt
-
+	return '%s%s' % (cmd, ' '.join(opt))
 
 # -------------------------------------------------------- "game" command delegate
 def game(args, remainder):
-	exe = is_binary(args.binary)
+	cmd = ''
+	if args.binary:
+		cmd += 'TODO' + ' '
+	else:
+		cmd += engine['unreal_editor_cmd_exe'] + ' ' + project['uproject'] + ' '
 
-	if not args.standalone:
-		exe += args.ip + ' '
+	if args.client:
+		cmd += args.ip + ' '
+	else:
+		cmd += args.map + ' '
 
 	opt = [
-	'-log',
 	'-game',
 	'-windowed',
 	'-resx=1280',
@@ -189,21 +181,18 @@ def game(args, remainder):
 	'-fullcrashdumpalways',
 	'-noailogging',
 	'-NOSTEAM',
+	'-log',
 	' '.join(remainder)
 	]
-	return exe, opt
-
+	return '%s%s' % (cmd, ' '.join(opt))
 
 # -------------------------------------------------------- "cook" command delegate
 def cook(args, remainder):
-	# TODO::
-	pass
-
+	return ''
 
 # -------------------------------------------------------- "profile" command delegate
 def profile(args, remainder):
-	# TODO::
-	pass
+	return ''
 
 # -------------------------------------------------------- main
 def main(argc, argv):
@@ -227,7 +216,6 @@ def main(argc, argv):
 	build_parser.add_argument('-configuration', '--configuration', type=str, default='Development')
 	build_parser.set_defaults(func=build)
 
-
 	# create the parser for the "editor" command
 	editor_parser = sub_parsers.add_parser('editor')
 	editor_parser.set_defaults(func=editor)
@@ -242,7 +230,8 @@ def main(argc, argv):
 	# create the parser for the "game" command
 	game_parser = sub_parsers.add_parser('game')
 	game_parser.add_argument('-b', '--binary', action='store_true')
-	game_parser.add_argument('-s', '--standalone', action='store_true')
+	game_parser.add_argument('-map', type=str, default='DefaultStartMap')
+	game_parser.add_argument('-client', '--client', action='store_true')
 	game_parser.add_argument('-ip', '--ip', type=str, default='127.0.0.1')
 	game_parser.set_defaults(func=game)
 
