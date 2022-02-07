@@ -27,8 +27,11 @@ project['script_dir']	= project['base_dir'] + '\\Script'
 project['shader_dir']	= project['base_dir'] + '\\Shaders' 
 project['saved_dir']	= project['base_dir'] + '\\Saved' 
 
-project['server_exe']	= project['binary_dir'] + '\\' + project['name'] + 'Server.exe'
-project['client_exe']	= project['binary_dir'] + '\\' + project['name'] + '.exe'
+project['uproject']						= project['base_dir'] + '\\' + project['name'] + '.uproject'
+project['generate_project_file_bat']	= project['base_dir'] + '\\' + 'GenerateProjectFiles.bat'
+
+project['server_exe']					= project['binary_dir'] + '\\' + project['name'] + 'Server.exe'
+project['client_exe']					= project['binary_dir'] + '\\' + project['name'] + '.exe'
 
 
 engine = dict()
@@ -71,13 +74,15 @@ def echo_env(env):
 		print('# ------------------------------ engine configuration')
 
 	for key, val in env.items():
-		print('\t{0:<24} = {1}'.format(key, val))
+		print('\t{0:<26} = {1}'.format(key, val))
+	print('')
 
-def echo_cmd(exe, opt):
-	print('\t%s' % exe)
+
+
+def echo_cmd(exe, proj, opt):
+	print('\t%s %s' % (exe, proj))
 	for o in opt:
 		print('\t\t%s' % o) 
-
 
 def is_binary(v):
 	if v:
@@ -94,26 +99,73 @@ def is_valid_pwd():
 		return True
 	return False;
 
+# -------------------------------------------------------- "env" command delegate
+def env(args, remainder):
+	print('#----------------------------------------------------- %s' % project['name'])
+	echo_env(wkspace)
+	echo_env(project)
+	echo_env(engine)
 
-def editor(args, remainder):
-	cmd = engine['unreal_editor_exe']
+# -------------------------------------------------------- "build" command delegate
+def build(args, remainder):
+	batch = engine['build_bat']
+
+	target = project['name']
+	if args.target.lower() == 'game':
+		target +=''
+	elif args.target.lower() == 'client':
+		target += 'Client'
+	elif args.target.lower() == 'server':
+		target += 'Server'
+	elif args.target.lower() == 'editor':
+		target += 'Editor'
+	else:
+		print('invalid target specified')
+		return ''
+
+	proj = project['uproject']
+
 	opt = [
+		'-waitMutex',
+		'-NoHotReload',
+		' '.join(remainder),
+	]
+
+	cmd = '%s %s %s %s %s %s' % (
+		batch, 
+		target, 
+		args.platform, 
+		args.configuration, 
+		proj, 
+		' '.join(opt)
+		)
+	return cmd
+
+
+# -------------------------------------------------------- "editor" command delegate
+def editor(args, remainder):
+	#exe = engine['unreal_editor_exe']
+	exe = engine['unreal_editor_cmd_exe']
+	proj = project['uproject']
+	opt = [
+		'-log',
 		'-fullcrashdumpalways',
 		'-ddc=noshared',
 		' '.join(remainder),
 	]
-	return cmd, opt
+	cmd = '%s %s %s' % (exe, proj, ' '.join(opt))
+	return cmd
 
-
+# -------------------------------------------------------- "server" command delegate
 def server(args, remainder):
 	exe = is_binary(args.binary)
 	if not is_exists(exe):
 		return
 
 	opt = [
+		'-log',
 		'-server',
 		'-game',
-		'-log',
 		'-fullcrashdumpalways',
 		'-noailogging',
 		' '.join(remainder)
@@ -121,6 +173,7 @@ def server(args, remainder):
 	return exe, opt
 
 
+# -------------------------------------------------------- "game" command delegate
 def game(args, remainder):
 	exe = is_binary(args.binary)
 
@@ -128,32 +181,32 @@ def game(args, remainder):
 		exe += args.ip + ' '
 
 	opt = [
+	'-log',
+	'-game',
 	'-windowed',
 	'-resx=1280',
-	'-rey=720',
-	'-game',
-	'-log',
+	'-resy=720',
 	'-fullcrashdumpalways',
 	'-noailogging',
 	'-NOSTEAM',
 	' '.join(remainder)
 	]
 	return exe, opt
-	#echo_cmd(exe, opt)
-	#return '%s %s' % (exe, ' '.join(opt))
 
 
+# -------------------------------------------------------- "cook" command delegate
 def cook(args, remainder):
 	# TODO::
 	pass
 
 
+# -------------------------------------------------------- "profile" command delegate
 def profile(args, remainder):
 	# TODO::
 	pass
 
-
-if __name__ == "__main__":
+# -------------------------------------------------------- main
+def main(argc, argv):
 	print('echo : %s' % ' '.join(sys.argv))
 	if not is_valid_pwd():
 		print('Failed to get valid pwd, %s' % wkspace['pwd_dir'])
@@ -163,10 +216,21 @@ if __name__ == "__main__":
 	main_parser = argparse.ArgumentParser()
 	sub_parsers = main_parser.add_subparsers()
 
+	# create the parser for the "env" command
+	env_parser = sub_parsers.add_parser('env')
+	env_parser.set_defaults(func=env)
+
+	# create the parser for the "build" command
+	build_parser = sub_parsers.add_parser('build')
+	build_parser.add_argument('-target', '--target', type=str, default='editor')
+	build_parser.add_argument('-platform', '--platform', type=str, default='Win64')
+	build_parser.add_argument('-configuration', '--configuration', type=str, default='Development')
+	build_parser.set_defaults(func=build)
+
+
 	# create the parser for the "editor" command
 	editor_parser = sub_parsers.add_parser('editor')
 	editor_parser.set_defaults(func=editor)
-
 
 	# create the parser for the "server" command
 	server_parser = sub_parsers.add_parser('server')
@@ -191,21 +255,23 @@ if __name__ == "__main__":
 	profile_parser.set_defaults(func=profile)
 
 	args, remainder = main_parser.parse_known_args()
+
 	if hasattr(args, "func"):
-		echo_env(wkspace)
-		echo_env(project)
-		echo_env(engine)
+		if args.func == env:
+			args.func(args, remainder)
+			return
 
+
+		env(args, remainder)
 		print('# ------------------------------ launch')
-		exe, opt = args.func(args, remainder)
-
-		print('\t%s' % exe)
-		for o in opt:
-			print('\t\t%s' % o) 
-
-		command = '%s %s' % (exe, ' '.join(opt))
-		print(command)
-
+		cmd = args.func(args, remainder)
+		
+		print(cmd)
+		os.system(cmd)
+		
 	else:
 		main_parser.print_help()
 
+
+if __name__ == "__main__":
+	main('', '')
