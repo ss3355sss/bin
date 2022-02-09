@@ -155,6 +155,7 @@ def server(args, remainder):
 		'-game',
 		'-fullcrashdumpalways',
 		'-noailogging',
+		'-NOSTEAM',
 		'-log',
 		' '.join(remainder)
 	]
@@ -168,16 +169,16 @@ def game(args, remainder):
 	else:
 		cmd += engine['unreal_editor_cmd_exe'] + ' ' + project['uproject'] + ' '
 
-	if args.client:
-		cmd += args.ip + ' '
-	else:
+	if args.standalone:
 		cmd += args.map + ' '
+	else:
+		cmd += args.ip + ' '
 
 	opt = [
 	'-game',
 	'-windowed',
-	'-resx=1280',
-	'-resy=720',
+	'-resx=1920',
+	'-resy=1080',
 	'-fullcrashdumpalways',
 	'-noailogging',
 	'-NOSTEAM',
@@ -231,7 +232,7 @@ def main(argc, argv):
 	game_parser = sub_parsers.add_parser('game')
 	game_parser.add_argument('-b', '--binary', action='store_true')
 	game_parser.add_argument('-map', type=str, default='DefaultStartMap')
-	game_parser.add_argument('-client', '--client', action='store_true')
+	game_parser.add_argument('-standalone', '--standalone', action='store_true')
 	game_parser.add_argument('-ip', '--ip', type=str, default='127.0.0.1')
 	game_parser.set_defaults(func=game)
 
