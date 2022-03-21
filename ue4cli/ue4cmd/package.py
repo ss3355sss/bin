@@ -21,21 +21,25 @@ def func(args, remainder):
 
 	arguments.append('-project=%s' % ue4path.get_project_directories()['uproject'])
 
-	if args.type == 'client':
-		arguments.append('-platform=%s' % args.platform)
-		arguments.append('-clientconfig=%s' % args.config)
+	if args.skipbuild:
+		arguments.append('-skipbuild') 
+	else:
+		arguments.append('-build') 
+		if args.type == 'client':
+			arguments.append('-platform=%s' % args.platform)
+			arguments.append('-clientconfig=%s' % args.config)
 
-	if args.type == 'server':
-		arguments.append('-server')
-		arguments.append('-serverplatform=%s' % args.platform)
-		arguments.append('-serverclientconfig=%s' % args.config)
+		if args.type == 'server':
+			arguments.append('-server')
+			arguments.append('-serverplatform=%s' % args.platform)
+			arguments.append('-serverclientconfig=%s' % args.config)
 
-	if args.type == 'all':
-		arguments.append('-platform=%s' % args.clientplatform)
-		arguments.append('-clientconfig=%s' % args.clientconfig)
-		arguments.append('-server')
-		arguments.append('-serverplatform=%s' % args.clientplatform)
-		arguments.append('-serverclientconfig=%s' % args.clientconfig)
+		if args.type == 'all':
+			arguments.append('-platform=%s' % args.clientplatform)
+			arguments.append('-clientconfig=%s' % args.clientconfig)
+			arguments.append('-server')
+			arguments.append('-serverplatform=%s' % args.clientplatform)
+			arguments.append('-serverclientconfig=%s' % args.clientconfig)
 
 	if args.archive:
 		arguments.append('-archive')
@@ -51,14 +55,17 @@ def func(args, remainder):
 	if args.map:
 		arguments.append('-map=%s' % args.map)
 
+	if not args.skipcook:
+		arguments.append('-cook') 
+		arguments.append('-iterate') 
+		arguments.append('-compressed') 
+
+	if not args.nopak:
+		arguments.append('-pak')
+		if with_bv:
+			arguments.append('-bvpak')
+
 	arguments.append('-nop4') 
-	arguments.append('-build') 
-	arguments.append('-cook') 
-	arguments.append('-compressed') 
-	arguments.append('-iterate') 
-	arguments.append('-pak')
-	if with_bv:
-		arguments.append('-bvpak')
 	arguments.append('-fileopenlog')
 	arguments.append('-utf8output')
 
@@ -145,6 +152,10 @@ def add_argument(parser):
 			default='development',
 			metavar='{%s}' % '|'.join(configurations),
 			required=False)	
+
+	parser.add_argument('-skipbuild', action='store_true')
+	parser.add_argument('-skipcook', action='store_true')
+	parser.add_argument('-nopak', action='store_true')
 
 	parser.add_argument('-archive', action='store_true')
 	if '-archive' in sys.argv:

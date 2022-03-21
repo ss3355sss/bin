@@ -16,7 +16,6 @@ from ue4cmd import common as ue4common
 def commonfunc(args, remainder):
 	execute = str()
 	arguments = list()
-	profilecmds = str()
 	# -------------------------------------- make command string
 	execute = ue4common.get_gameplay_execute(args, is_server=False)
 	if not execute:
@@ -37,15 +36,13 @@ def commonfunc(args, remainder):
 	if remainder:
 		arguments.extend(ue4common.get_remainder(remainder))
 
-	profilecmds += 'profileunit=%s' % args.profileunit
-
+	profilecmds = 'profileunit=%s' % args.profileunit
 	if args.prefix:
 		profilecmds += ', prefix=%s' % args.prefix
 	if args.postfix:
 		profilecmds += ', postfix=%s' % args.postfix
 	if args.profiledir:
 		profilecmds += ', profiledir=%s' % args.profiledir
-
 
 	return execute, arguments, profilecmds;
 
@@ -57,11 +54,9 @@ def capturefunc(args, remainder):
 	profilecmds += ', capturetype=%s' % args.capturetype
 	if args.targetbuffers:
 		profilecmds += ', targetbuffers=%s, ' % args.targetbuffers
-	profilecmds = '-BvTechArt.Profile=\"%s\"' % profilecmds
 	# -------------------------------------- exec command
+	profilecmds = '-BvTechArt.Profile=\"type=capture, %s\"' % profilecmds
 	command = ue4common.get_command(execute, arguments, profilecmds)		
-
-
 
 def memoryfunc(args, remainder):
 	execute, arguments, profilecmds =  commonfunc(args, remainder)
@@ -69,9 +64,9 @@ def memoryfunc(args, remainder):
 		return
 
 	profilecmds += ', dumpinterval=%d' % args.dumpinterval
-	profilecmds = '-BvTechArt.Profile=\"%s\"' % profilecmds
-
 	# -------------------------------------- exec command
+	profilecmds = '-BvTechArt.Profile=\"type=memory, %s\"' % profilecmds
+
 	command = ue4common.get_command(execute, arguments, profilecmds)		
 
 def tracefunc(args, remainder):
@@ -80,9 +75,9 @@ def tracefunc(args, remainder):
 		return
 
 	profilecmds += ', profiler=%s' % args.profiler
-	profilecmds = '-BvTechArt.Profile=\"%s\"' % profilecmds
-
+	
 	# -------------------------------------- exec command
+	profilecmds = '-BvTechArt.Profile=\"type=trace, %s\"' % profilecmds
 	command = ue4common.get_command(execute, arguments, profilecmds)		
 
 def allfunc(args, remainder):
@@ -134,7 +129,7 @@ def add_argument(parser):
 		metavar='${unitfile}',
 		required=True)
 
-	if '-profiletype=capture' in sys.argv or '-type=all' in sys.argv:
+	if '-profiletype=capture' in sys.argv or '-profiletype=all' in sys.argv:
 		parser.add_argument('-capturetype',
 			choices=['video', 'seq'],
 			type=str,
@@ -146,14 +141,14 @@ def add_argument(parser):
 			metavar="${buffer1|buffer2|...|bufferN}",
 			required=False)
 
-	if '-profiletype=memory' in sys.argv or '-type=all' in sys.argv:
+	if '-profiletype=memory' in sys.argv or '-profiletype=all' in sys.argv:
 		parser.add_argument('-dumpinterval',
 			type=int,
 			default=0,
 			metavar="${interval}",
 			required=False)
 
-	if '-profiletype=trace' in sys.argv or '-type=all' in sys.argv:
+	if '-profiletype=trace' in sys.argv or '-profiletype=all' in sys.argv:
 		parser.add_argument('-profiler', 
 			type=str,
 			choices=['csv', 'stat'],
