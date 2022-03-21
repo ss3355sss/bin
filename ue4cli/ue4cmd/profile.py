@@ -16,6 +16,7 @@ from ue4cmd import common as ue4common
 def commonfunc(args, remainder):
 	execute = str()
 	arguments = list()
+	profilecmds = str()
 	# -------------------------------------- make command string
 	execute = ue4common.get_gameplay_execute(args, is_server=False)
 	if not execute:
@@ -33,51 +34,56 @@ def commonfunc(args, remainder):
 		error('Failed to get valid profileunit, %s' % args.profileunit)
 		return None, None
 
-	arguments.append('-profileunit=%s' % args.profileunit)
-
-	if args.prefix:
-		arguments.append('-prefix=%s' % args.prefix)
-	if args.postfix:
-		arguments.append('-postfix=%s' % args.postfix)
-	if args.profiledir:
-		arguments.append('-profilerdir=%s' % args.profiledir)
-
 	if remainder:
 		arguments.extend(ue4common.get_remainder(remainder))
 
-	return execute, arguments;
+	profilecmds += 'profileunit=%s' % args.profileunit
+
+	if args.prefix:
+		profilecmds += ', prefix=%s' % args.prefix
+	if args.postfix:
+		profilecmds += ', postfix=%s' % args.postfix
+	if args.profiledir:
+		profilecmds += ', profiledir=%s' % args.profiledir
+
+
+	return execute, arguments, profilecmds;
 
 def capturefunc(args, remainder):
-	execute, arguments =  commonfunc(args, remainder)
+	execute, arguments, profilecmds =  commonfunc(args, remainder)
 	if not execute:
 		return
 
-	arguments.append('-capturetype=%s' % args.capturetype)
+	profilecmds += ', capturetype=%s' % args.capturetype
 	if args.targetbuffers:
-		arguments.append('-targetbuffers=%s' % args.targetbuffers)
-
+		profilecmds += ', targetbuffers=%s, ' % args.targetbuffers
+	profilecmds = '-BvTechArt.Profile=\"%s\"' % profilecmds
 	# -------------------------------------- exec command
-	command = ue4common.get_command(execute, arguments)		
+	command = ue4common.get_command(execute, arguments, profilecmds)		
+
+
 
 def memoryfunc(args, remainder):
-	execute, arguments =  commonfunc(args, remainder)
+	execute, arguments, profilecmds =  commonfunc(args, remainder)
 	if not execute:
 		return
 
-	arguments.append('-dumpinterval=%s' % args.dumpinterval)
+	profilecmds += ', dumpinterval=%d' % args.dumpinterval
+	profilecmds = '-BvTechArt.Profile=\"%s\"' % profilecmds
 
 	# -------------------------------------- exec command
-	command = ue4common.get_command(execute, arguments)		
+	command = ue4common.get_command(execute, arguments, profilecmds)		
 
 def tracefunc(args, remainder):
-	execute, arguments =  commonfunc(args, remainder)
+	execute, arguments, profilecmds =  commonfunc(args, remainder)
 	if not execute:
 		return
 
-	arguments.append('-profiler=%s' % args.profiler)
+	profilecmds += ', profiler=%s' % args.profiler
+	profilecmds = '-BvTechArt.Profile=\"%s\"' % profilecmds
 
 	# -------------------------------------- exec command
-	command = ue4common.get_command(execute, arguments)		
+	command = ue4common.get_command(execute, arguments, profilecmds)		
 
 def allfunc(args, remainder):
 	display('#------------------------- profile capture')
@@ -118,7 +124,7 @@ def add_argument(parser):
 			metavar='\'${server-ip}\'',
 			required=False)
 
-	parser.add_argument('-type', 
+	parser.add_argument('-profiletype', 
 		choices=['capture', 'memory', 'trace', 'all'],
 		type=str,
 		metavar='{capture|memory|trace|all}',
@@ -128,11 +134,11 @@ def add_argument(parser):
 		metavar='${unitfile}',
 		required=True)
 
-	if '-type=capture' in sys.argv or '-type=all' in sys.argv:
+	if '-profiletype=capture' in sys.argv or '-type=all' in sys.argv:
 		parser.add_argument('-capturetype',
 			choices=['video', 'seq'],
 			type=str,
-			default='vedio',
+			default='video',
 			metavar="{video|seq}",
 			required=False)
 		parser.add_argument('-targetbuffers',
@@ -140,14 +146,14 @@ def add_argument(parser):
 			metavar="${buffer1|buffer2|...|bufferN}",
 			required=False)
 
-	if '-type=memory' in sys.argv or '-type=all' in sys.argv:
+	if '-profiletype=memory' in sys.argv or '-type=all' in sys.argv:
 		parser.add_argument('-dumpinterval',
 			type=int,
 			default=0,
 			metavar="${interval}",
 			required=False)
 
-	if '-type=trace' in sys.argv or '-type=all' in sys.argv:
+	if '-profiletype=trace' in sys.argv or '-type=all' in sys.argv:
 		parser.add_argument('-profiler', 
 			type=str,
 			choices=['csv', 'stat'],
@@ -187,12 +193,12 @@ def add_argument(parser):
 	ue4common.add_log_options_argument(parser)
 
 	# -------------------------------------- set func
-	if '-type=capture' in sys.argv:
+	if '-profiletype=capture' in sys.argv:
 		parser.set_defaults(func=capturefunc);
-	if '-type=memory' in sys.argv:
+	if '-profiletype=memory' in sys.argv:
 		parser.set_defaults(func=memoryfunc);
-	if '-type=trace' in sys.argv:
+	if '-profiletype=trace' in sys.argv:
 		parser.set_defaults(func=tracefunc);
-	if '-type=all' in sys.argv:
+	if '-profiletype=all' in sys.argv:
 		parser.set_defaults(func=allfunc);
 

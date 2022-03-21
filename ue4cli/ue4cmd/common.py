@@ -10,7 +10,7 @@ from stdout import *
 
 from ue4sys import path as ue4path
 
-def get_command(execute, arguments):
+def get_command(execute, arguments, remainder = None):
 	project = ue4path.get_project()
 	if project:
 	 	display('project')
@@ -29,6 +29,9 @@ def get_command(execute, arguments):
 		display("arguments")
 		for arg in arguments:
 			print('   %s' % arg)
+		if remainder:
+			print('   %s' % remainder)
+			arguments.append(remainder)
 		print()
 
 	command = '%s %s' % (execute, (' ').join(arguments))

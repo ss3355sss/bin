@@ -64,14 +64,14 @@
 		-Bv.TechArt.Profile "${ProfileOptions}"
 
 	- "${ProfileOptions}"
-		phase=capture
+		type=capture
 		capturetype={video|seq}
 		[targetbuffers=${buffer1}+${buffer2}+...+${bufferN}]
 
-		phase=memory
+		type=memory
 		[dumpinterval=${interval}]
 
-		phase=trace
+		type=trace
 		profiler={csv|stat}
 
 
