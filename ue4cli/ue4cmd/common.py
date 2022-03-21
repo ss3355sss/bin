@@ -52,14 +52,6 @@ def add_global_options():
 
 
 def add_gameplay_execute_argument(parser):
-	#if ue4path.is_cwd_project_directory():
-	#	parser.add_argument(
-	#		'-uncooked', 
-	#		type=lambda x:bool(strtobool(x)),
-	#		required = False,
-	#		default=True,
-	#		metavar="{true|false}")
-
 	if ue4path.is_cwd_project_directory():
 		parser.add_argument('-uncooked', action='store_true')
 
