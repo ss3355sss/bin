@@ -6,6 +6,8 @@ import argparse
 import datetime
 from distutils.util import strtobool
 
+import subprocess 
+from subprocess import Popen, PIPE
 from stdout import * 
 
 from ue4sys import path as ue4path
@@ -40,6 +42,13 @@ def get_command(execute, arguments, remainder = None):
 	print('   %s' % command)
 	print()
 
+	#Todo:: 뭐가 더 좋은거임
+	#with Popen([command, arguments], stdout=PIPE, bufsize=1, universal_newlines=True) as p:
+	#	for line in p.stdout:
+	#		print(line, end='') 
+	os.system(command)
+
+
 	return command
 
 def get_remainder(remainder):
@@ -52,7 +61,6 @@ def add_global_argument(parser):
 
 def add_global_options():
 	pass
-
 
 def add_gameplay_execute_argument(parser):
 	if ue4path.is_cwd_project_directory():
@@ -125,13 +133,17 @@ def get_gameplay_options(args, is_server):
 
 
 def add_log_options_argument(parser):
-	parser.add_argument('-log', 	type=lambda x:bool(strtobool(x)), default=True, metavar="{true|false}", required = False)
-	parser.add_argument('-logcmds', type=str, default='\"global on, LogInit on\"', metavar="${Categories}", required=False)
+	parser.add_argument('-log', action='store_true')
+	parser.add_argument('-logcmds', type=str, metavar="${categories}", required=False)
 
 def get_log_options(args):
 	opts = list()
 	if args.log:
 		opts.append('-log')
-		opts.append('-logcmds=%s' % args.logcmds)
+		if args.logcmds:
+			categories = '\"global off, %s\"' % args.logcmds
+			opts.append('-logcmds=%s' % categories)
+	else:
+		opts.append('-silent')
 	return opts
 
