@@ -28,14 +28,13 @@ def commonfunc(args, remainder):
 	options.extend(ue4common.get_gamewnd_options(args))
 	options.extend(ue4common.get_log_options(args))
 
-	if not ue4path.is_exist(args.profileunit):
-		error('Failed to get valid profileunit, %s' % args.profileunit)
-		return None, None
 
 	if remainder:
 		options.extend(ue4common.get_remainder(remainder))
 
-	profilecmds = 'profileunit=%s' % args.profileunit
+	profilecmds = str()
+	if args.profileunit and ue4path.is_exist(args.profileunit):
+		profilecmds += ', profileunit=%s' % args.profileunit
 	if args.prefix:
 		profilecmds += ', prefix=%s' % args.prefix
 	if args.postfix:
@@ -76,7 +75,7 @@ def tracefunc(args, remainder):
 	
 	# -------------------------------------- exec command
 	profilecmds = '-BvTechArt.Profile=\"type=trace, %s\"' % profilecmds
-	command = ue4common.exec_command(execute, params, options, profilecmds)		
+	ue4common.exec_command(execute, params, options, profilecmds)		
 
 def allfunc(args, remainder):
 	display('#------------------------- profile capture')
@@ -122,10 +121,6 @@ def add_argument(parser):
 		type=str,
 		metavar='{capture|memory|trace|all}',
 		required=True)
-	parser.add_argument('-profileunit', 
-		type=str,
-		metavar='${unitfile}',
-		required=True)
 
 	if '-profiletype=capture' in sys.argv or '-profiletype=all' in sys.argv:
 		parser.add_argument('-capturetype',
@@ -153,6 +148,11 @@ def add_argument(parser):
 			default='csv',
 			metavar="{csv|stat}",
 			required=False)
+
+	parser.add_argument('-profileunit', 
+		type=str,
+		metavar='${unitfile}',
+		required=False)
 
 	parser.add_argument('-prefix', 
 		type=str,

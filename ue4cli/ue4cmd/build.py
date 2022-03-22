@@ -12,12 +12,9 @@ from ue4cmd import common as ue4common
 
 def func(args, remainder):
 	# -------------------------------------- make command string
-	execute = str()
-	arguments = list()
-
-
-	execute = '%s' % ue4path.get_engine_directories()['build']
-
+	execute, params, options = ue4common.get_gameplay_execute(args, is_server=False)
+	if not execute:
+		return
 	target = str()
 	if args.target == 'editor':
 		target = 'Editor'
@@ -26,19 +23,19 @@ def func(args, remainder):
 	if args.target == 'server':
 		target = 'Server'
 
-	arguments.append('%s%s' % (ue4path.get_project(), target))
-	arguments.append('%s' % args.platform)
-	arguments.append('%s' % args.config)
-	arguments.append('%s' % ue4path.get_project_directories()['uproject'])
+	params.append('%s%s' % (ue4path.get_project(), target))
+	params.append('%s' % args.platform)
+	params.append('%s' % args.config)
+	params.append('%s' % ue4path.get_project_directories()['uproject'])
 
-	arguments.append('-waitMutex') 
-	arguments.append('-NoHotReload') 
+	options.append('-waitMutex') 
+	options.append('-NoHotReload') 
 
 	if remainder:
-		arguments.extend(ue4common.get_remainder(remainder))
+		options.extend(ue4common.get_remainder(remainder))
 
 	# -------------------------------------- exec command
-	command = ue4common.get_command(execute, arguments)
+	ue4common.exec_command(execute, params, options)
 
 
 targets = ['editor', 'client', 'server']

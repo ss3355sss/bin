@@ -29,7 +29,7 @@ def func(args, remainder):
 		options.extend(ue4common.get_remainder(remainder))
 
 	# -------------------------------------- exec command
-	command = ue4common.exec_command(execute, params, options)
+	ue4common.exec_command(execute, params, options)
 
 # -------------------------------------- add parser
 def add_parser(sub_parser):

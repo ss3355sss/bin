@@ -86,7 +86,7 @@ def func(args, remainder):
 		options.extend(ue4common.get_remainder(remainder))
 
 	# -------------------------------------- exec command
-	command = ue4common.exec_command(execute, params, options)
+	ue4common.exec_command(execute, params, options)
 
 
 plaforms = ['win64', 'win32', 'mac', 'linux']

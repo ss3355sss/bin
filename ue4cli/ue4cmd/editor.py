@@ -14,23 +14,22 @@ from ue4cmd import common as ue4common
 
 def func(args, remainder):
 	# -------------------------------------- make command string
-	execute = str()
-	arguments = list()
-
-	execute = '%s %s' % (ue4path.get_engine_directories()['ue4editor'], ue4path.get_project_directories()['uproject'])
+	execute, params, options = ue4common.get_gameplay_execute(args, is_server=False)
+	if not execute:
+		return
 
 	if ue4path.is_exist(args.ddc):
-		arguments.append('-ddc=%s' % args.ddc)
+		options.append('-ddc=%s' % args.ddc)
 	else:
-		arguments.append('-ddc=noshared')
+		options.append('-ddc=noshared')
 
-	arguments.extend(ue4common.get_log_options(args))
+	options.extend(ue4common.get_log_options(args))
 	
 	if remainder:
-		arguments.extend(ue4common.get_remainder(remainder))
+		options.extend(ue4common.get_remainder(remainder))
 
 	# -------------------------------------- exec command
-	ue4common.get_command(execute, arguments)
+	ue4common.exec_command(execute, params, options)
 
 def add_parser(sub_parser):
 	if not ue4path.is_engine_directory_valid():
