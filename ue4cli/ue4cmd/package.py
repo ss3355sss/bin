@@ -15,65 +15,78 @@ with_bv = True
 def func(args, remainder):
 	# -------------------------------------- make command string
 	execute = str()
-	arguments = list()
+	params = list()
+	options = list()
 
 	execute = '%s BuildCookRun' % ue4path.get_engine_directories()['runuat']
 
-	arguments.append('-project=%s' % ue4path.get_project_directories()['uproject'])
+	options.append('-project=%s' % ue4path.get_project_directories()['uproject'])
 
 	if args.skipbuild:
-		arguments.append('-skipbuild') 
+		options.append('-skipbuild') 
 	else:
-		arguments.append('-build') 
-		if args.type == 'client':
-			arguments.append('-platform=%s' % args.platform)
-			arguments.append('-clientconfig=%s' % args.config)
+		options.append('-build') 
+	if args.type == 'client':
+		options.append('-platform=%s' % args.platform)
+		options.append('-clientconfig=%s' % args.config)
 
-		if args.type == 'server':
-			arguments.append('-server')
-			arguments.append('-serverplatform=%s' % args.platform)
-			arguments.append('-serverclientconfig=%s' % args.config)
+	if args.type == 'server':
+		options.append('-server')
+		options.append('-serverplatform=%s' % args.platform)
+		options.append('-serverclientconfig=%s' % args.config)
 
-		if args.type == 'all':
-			arguments.append('-platform=%s' % args.clientplatform)
-			arguments.append('-clientconfig=%s' % args.clientconfig)
-			arguments.append('-server')
-			arguments.append('-serverplatform=%s' % args.clientplatform)
-			arguments.append('-serverclientconfig=%s' % args.clientconfig)
+	if args.type == 'all':
+		options.append('-platform=%s' % args.clientplatform)
+		options.append('-clientconfig=%s' % args.clientconfig)
+		options.append('-server')
+		options.append('-serverplatform=%s' % args.clientplatform)
+		options.append('-serverclientconfig=%s' % args.clientconfig)
 
 	if args.archive:
-		arguments.append('-archive')
-		arguments.append('-archivedirectory=%s' % args.archivedirectory)
+		options.append('-archive')
+		options.append('-archivedirectory=%s' % args.archivedirectory)
+		options.append('-stage')
+		options.append('-nodebuginfo')
 
 	if args.stage:
-		arguments.append('-stage')
-		arguments.append('-stagingdirectory=%s' % args.stage)
-		arguments.append('-nodebuginfo')
-	else:
-		arguments.append('-skipstage')
+		options.append('-stage')
+		options.append('-nodebuginfo')
+
+	if args.stagedirectory:
+		options.append('-stagingdirectory=%s' % args.stagedirectory)
+
+	if args.skipstage:
+		options.append('-skipstage')
 
 	if args.map:
-		arguments.append('-map=%s' % args.map)
+		options.append('-map=%s' % args.map)
 
 	if not args.skipcook:
-		arguments.append('-cook') 
-		arguments.append('-iterate') 
-		arguments.append('-compressed') 
+		options.append('-cook') 
+		options.append('-iterate') 
+		options.append('-compressed') 
 
-	if not args.nopak:
-		arguments.append('-pak')
+	if not args.skippak:
+		options.append('-pak')
 		if with_bv:
-			arguments.append('-bvpak')
+			options.append('-bvpak')
 
-	arguments.append('-nop4') 
-	arguments.append('-fileopenlog')
-	arguments.append('-utf8output')
+	if ue4path.is_exist(args.ddc):
+		options.append('-ddc=%s' % args.ddc)
+	else:
+		options.append('-ddc=noshared')
+
+	options.append('-nop4') 
+	options.append('-fileopenlog')
+	options.append('-utf8output')
+
+	options.extend(ue4common.get_log_options(args))
 
 	if remainder:
-		arguments.extend(ue4common.get_remainder(remainder))
+		options.extend(ue4common.get_remainder(remainder))
 
 	# -------------------------------------- exec command
-	command = ue4common.get_command(execute, arguments)
+	command = ue4common.exec_command(execute, params, options)
 
 
 plaforms = ['win64', 'win32', 'mac', 'linux']
@@ -155,28 +168,36 @@ def add_argument(parser):
 
 	parser.add_argument('-skipbuild', action='store_true')
 	parser.add_argument('-skipcook', action='store_true')
-	parser.add_argument('-nopak', action='store_true')
+	parser.add_argument('-skipstage', action='store_true')
+	parser.add_argument('-skippak', action='store_true')
 
 	parser.add_argument('-archive', action='store_true')
 	if '-archive' in sys.argv:
 		parser.add_argument('-archivedirectory',
 			type=str,
-			default='%s\\Archive' % ue4path.get_engine_directories()['saved_dir'],
+			default='%s\\Archive' % ue4path.get_project_directories()['saved_dir'],
 			metavar='${archivedirectory}',
 			required=False)
 
 	parser.add_argument('-stage', action='store_true')
-	if '-stage' in sys.argv:
-		parser.add_argument('-stagedirectory',
-			type=str,
-			default='%s\\Stage' % ue4path.get_engine_directories()['saved_dir'],
-			metavar='${stagedirectory}',
-			required=False)
+	parser.add_argument('-stagedirectory',
+		type=str,
+		#default='%s\\Stage' % ue4path.get_project_directories()['saved_dir'],
+		metavar='${stagedirectory}',
+		required=False)
 
 	parser.add_argument('-map', 
 		type=str,
 		metavar='\'${map1}+${map2}+...+${mapN}\'',
 		required=False)
+
+	parser.add_argument(
+		'-ddc',
+		type=str,
+		default='',
+		metavar='${path}')
+
+	ue4common.add_log_options_argument(parser)
 
 	parser.set_defaults(func=func);
 

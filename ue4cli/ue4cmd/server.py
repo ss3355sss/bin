@@ -11,23 +11,21 @@ from ue4sys import path as ue4path
 from ue4cmd import common as ue4common
 
 def func(args, remainder):
-	execute = str()
-	arguments = list()
 	# -------------------------------------- make command string
-	execute = ue4common.get_gameplay_execute(args, is_server=True)
+	execute, params, options = ue4common.get_gameplay_execute(args, is_server=True)
 	if not execute:
 		return
 
-	arguments.append('%s' % args.map)
+	params.append('%s' % args.map)
 	
-	arguments.extend(ue4common.get_gameplay_options(args, is_server=True))
-	arguments.extend(ue4common.get_log_options(args))
+	options.extend(ue4common.get_additional_gameplay_options(args, is_server=True))
+	options.extend(ue4common.get_log_options(args))
 	
 	if remainder:
-		arguments.extend(ue4common.get_remainder(remainder))
+		options.extend(ue4common.get_remainder(remainder))
 
 	# -------------------------------------- exec command
-	command = ue4common.get_command(execute, arguments)
+	ue4common.exec_command(execute, params, options)
 
 def add_parser(sub_parser):
 	return sub_parser.add_parser('server')
@@ -37,11 +35,13 @@ def add_argument(parser):
 
 	parser.add_argument(
 		'-map',
-		required = False,
+		required=False,
 		default='DefaultStartMap',
 		metavar='${map}')
 
-	ue4common.add_gameplay_options_argument(parser)	
+	#parser.add_argument('-listen', action='store_true')
+	
+	ue4common.add_additional_gameplay_options_argument(parser)	
 	ue4common.add_log_options_argument(parser)
 
 	# -------------------------------------- set func

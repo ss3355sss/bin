@@ -14,27 +14,26 @@ from ue4cmd import common as ue4common
 
 # -------------------------------------- handle command
 def commonfunc(args, remainder):
-	execute = str()
-	arguments = list()
 	# -------------------------------------- make command string
-	execute = ue4common.get_gameplay_execute(args, is_server=False)
+	execute, params, options = ue4common.get_gameplay_execute(args, is_server=False)
 	if not execute:
 		return
 
 	if args.asrun == 'game':
-		arguments.append('%s' % args.map)
+		params.append('%s' % args.map)
 	else:
-		arguments.append('%s' % args.ip)
+		params.append('%s' % args.ip)
 
-	arguments.extend(ue4common.get_gameplay_options(args, is_server=False))
-	arguments.extend(ue4common.get_log_options(args))
+	options.extend(ue4common.get_additional_gameplay_options(args, is_server=False))
+	options.extend(ue4common.get_gamewnd_options(args))
+	options.extend(ue4common.get_log_options(args))
 
 	if not ue4path.is_exist(args.profileunit):
 		error('Failed to get valid profileunit, %s' % args.profileunit)
 		return None, None
 
 	if remainder:
-		arguments.extend(ue4common.get_remainder(remainder))
+		options.extend(ue4common.get_remainder(remainder))
 
 	profilecmds = 'profileunit=%s' % args.profileunit
 	if args.prefix:
@@ -44,10 +43,10 @@ def commonfunc(args, remainder):
 	if args.profiledir:
 		profilecmds += ', profiledir=%s' % args.profiledir
 
-	return execute, arguments, profilecmds;
+	return execute, params, options, profilecmds;
 
 def capturefunc(args, remainder):
-	execute, arguments, profilecmds =  commonfunc(args, remainder)
+	execute, params, options, profilecmds =  commonfunc(args, remainder)
 	if not execute:
 		return
 
@@ -56,21 +55,20 @@ def capturefunc(args, remainder):
 		profilecmds += ', targetbuffers=%s, ' % args.targetbuffers
 	# -------------------------------------- exec command
 	profilecmds = '-BvTechArt.Profile=\"type=capture, %s\"' % profilecmds
-	command = ue4common.get_command(execute, arguments, profilecmds)		
+	command = ue4common.exec_command(execute, params, options, profilecmds)		
 
 def memoryfunc(args, remainder):
-	execute, arguments, profilecmds =  commonfunc(args, remainder)
+	execute, params, options, profilecmds =  commonfunc(args, remainder)
 	if not execute:
 		return
 
 	profilecmds += ', dumpinterval=%d' % args.dumpinterval
 	# -------------------------------------- exec command
 	profilecmds = '-BvTechArt.Profile=\"type=memory, %s\"' % profilecmds
-
-	command = ue4common.get_command(execute, arguments, profilecmds)		
+	command = ue4common.exec_command(execute, params, options, profilecmds)		
 
 def tracefunc(args, remainder):
-	execute, arguments, profilecmds =  commonfunc(args, remainder)
+	execute, params, options, profilecmds =  commonfunc(args, remainder)
 	if not execute:
 		return
 
@@ -78,7 +76,7 @@ def tracefunc(args, remainder):
 	
 	# -------------------------------------- exec command
 	profilecmds = '-BvTechArt.Profile=\"type=trace, %s\"' % profilecmds
-	command = ue4common.get_command(execute, arguments, profilecmds)		
+	command = ue4common.exec_command(execute, params, options, profilecmds)		
 
 def allfunc(args, remainder):
 	display('#------------------------- profile capture')
@@ -184,7 +182,8 @@ def add_argument(parser):
 		required=False
 		)
 
-	ue4common.add_gameplay_options_argument(parser)	
+	ue4common.add_additional_gameplay_options_argument(parser)	
+	ue4common.add_gamewnd_options_argument(parser)
 	ue4common.add_log_options_argument(parser)
 
 	# -------------------------------------- set func

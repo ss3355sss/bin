@@ -12,22 +12,24 @@ from ue4cmd import common as ue4common
 
 def func(args, remainder):
 	execute = str()
-	arguments = list()
+	params = list()
+	options = list()
 	# -------------------------------------- make command string
-	execute = ue4common.get_gameplay_execute(args, is_server=False)
+	execute, params, options = ue4common.get_gameplay_execute(args, is_server=False)
 	if not execute:
 		return
 
-	arguments.append('%s' % args.map)
+	params.append('%s' % args.map)
 	
-	arguments.extend(ue4common.get_gameplay_options(args, is_server=False))
-	arguments.extend(ue4common.get_log_options(args))
+	options.extend(ue4common.get_additional_gameplay_options(args, is_server=False))
+	options.extend(ue4common.get_gamewnd_options(args))
+	options.extend(ue4common.get_log_options(args))
 	
 	if remainder:
-		arguments.extend(ue4common.get_remainder(remainder))
+		options.extend(ue4common.get_remainder(remainder))
 
 	# -------------------------------------- exec command
-	command = ue4common.get_command(execute, arguments)
+	command = ue4common.exec_command(execute, params, options)
 
 def add_parser(sub_parser):
 	return sub_parser.add_parser('game')
@@ -41,7 +43,8 @@ def add_argument(parser):
 		default='DefaultStartMap',
 		metavar='${map}')
 
-	ue4common.add_gameplay_options_argument(parser)	
+	ue4common.add_additional_gameplay_options_argument(parser)	
+	ue4common.add_gamewnd_options_argument(parser)
 	ue4common.add_log_options_argument(parser)
 
 	# -------------------------------------- set func

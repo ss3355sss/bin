@@ -12,7 +12,7 @@ from stdout import *
 
 from ue4sys import path as ue4path
 
-def get_command(execute, arguments, remainder = None):
+def exec_command(execute, params, options, remainder = None):
 	project = ue4path.get_project()
 	if project:
 	 	display('project')
@@ -20,36 +20,31 @@ def get_command(execute, arguments, remainder = None):
 	 	print('%s' % project)
 	 	print()
 
-	if execute:
-		display("execute")
-		print('   ', end='')
-		for string in execute.split(' '):
-			print('%s' % os.path.basename(string), end=' ')
-		print('\n')
+	if params:
+		display("params")
+		for param in params:
+			print('   %s' % param)
+		print('')
 
-	if arguments:
-		display("arguments")
-		for arg in arguments:
-			print('   %s' % arg)
+	if options:
+		display("options")
+		for opt in options:
+			print('   %s' % opt)
 		if remainder:
 			print('   %s' % remainder)
-			arguments.append(remainder)
+			options.append(remainder)
 		print()
 
-	command = '%s %s' % (execute, (' ').join(arguments))
+	command = execute
+	arguments = '%s %s' % (' '.join(params), ' '.join(options))
 
 	display("command")
-	print('   %s' % command)
+	print('   %s %s' % (execute, arguments))
 	print()
 
-	#Todo:: 뭐가 더 좋은거임
-	#with Popen([command, arguments], stdout=PIPE, bufsize=1, universal_newlines=True) as p:
-	#	for line in p.stdout:
-	#		print(line, end='') 
-	os.system(command)
-
-
-	return command
+	#os.system('%s %s' % (execute, arguments))
+	proc = subprocess.Popen('%s %s' % (execute, arguments))
+	out, err = proc.communicate()
 
 def get_remainder(remainder):
 	remainder = [remain for remain in remainder if not remain.startswith('-project')]
@@ -64,11 +59,20 @@ def add_global_options():
 
 def add_gameplay_execute_argument(parser):
 	if ue4path.is_cwd_project_directory():
-		parser.add_argument('-uncooked', action='store_true')
+		parser.add_argument('-cooked', action='store_true')
 
+		#project = ue4path.get_project()
+		#stage_dir = ue4path.get_project_directories()['stage_dir']
+		parser.add_argument('-stagedir', 
+			type=str,
+			default=ue4path.get_project_directories()['stage_dir'],
+			metavar='${statedir}\\${Target}\\%s\\Binaries\\Win64' % ue4path.get_project(), 
+			required=False)
 
 def get_gameplay_execute(args, is_server):
 	execute = str()
+	params = list()
+	options = list()
 
 	if ue4path.is_cwd_project_directory():
 		if not ue4path.is_engine_directory_valid():
@@ -78,38 +82,39 @@ def get_gameplay_execute(args, is_server):
 		engine_dirs 	= ue4path.get_engine_directories()
 		project_dirs 	= ue4path.get_project_directories()
 		
-		if args.uncooked:
+		if args.cooked:
+			stage_dir = str()
+			project = ue4path.get_project()
+			stage_dir = ue4path.get_project_directories()['stage_dir']
+
 			if is_server:
 				execute = '%s' % project_dirs['server']
+				options.append('-basedir=%s\\WindowsServer\\%s\\Binaries\\Win64' % (args.stagedir, ue4path.get_project()))
 			else:
+				print(args.stagedir)
 				execute = '%s' % project_dirs['client']
+				options.append('-basedir=%s\\WindowsNoEditor\\%s\\Binaries\\Win64' % (args.stagedir, ue4path.get_project()))
 		else:
-			execute = '%s %s' % (engine_dirs['ue4editor'], project_dirs['uproject'])
+			execute = '%s' % engine_dirs['ue4editor']
+			params.append('%s' % project_dirs['uproject'])
 
-	if ue4path.is_cwd_packaging_directory():
+	elif ue4path.is_cwd_packaging_directory():
+		if is_server:
+			execute = '%s' % ue4path.get_packaging_directories()['server']
+		else:
+			execute = '%s' % ue4path.get_packaging_directories()['client']		
 
-		execute = '%s' % ue4path.get_packaging_directories()['client']
-
-	return execute
+	return execute, params, options
 
 
-def add_gameplay_options_argument(parser):
-	parser.add_argument('-windowed', type=lambda x:bool(strtobool(x)), default=True, metavar="{true|false}", required = False)
-	parser.add_argument('-resx', type=int, default=1024, metavar="${resx}", required=False)
-	parser.add_argument('-resy', type=int, default=768, metavar="${resx}", required=False)
-
+def add_additional_gameplay_options_argument(parser):
 	parser.add_argument('-noailogging',  		type=lambda x:bool(strtobool(x)), default=True, metavar="{true|false}", required = False)
 	parser.add_argument('-noverifygc', 			type=lambda x:bool(strtobool(x)), default=True, metavar="{true|false}", required = False)
 	parser.add_argument('-nosteam', 			type=lambda x:bool(strtobool(x)), default=True, metavar="{true|false}", required = False)
 	parser.add_argument('-fullcrashdumpalways', type=lambda x:bool(strtobool(x)), default=True, metavar="{true|false}", required = False)
 
-def get_gameplay_options(args, is_server):
+def get_additional_gameplay_options(args, is_server):
 	opts = list()
-	if args.windowed:
-		opts.append('-windowed')
-		opts.append('-resx=%s' % args.resx)
-		opts.append('-resy=%s' % args.resy)
-
 	if args.noailogging:
 		opts.append('-noailogging')
 
@@ -130,6 +135,18 @@ def get_gameplay_options(args, is_server):
 
 	return opts
 
+def add_gamewnd_options_argument(parser):
+	parser.add_argument('-windowed', type=lambda x:bool(strtobool(x)), default=True, metavar="{true|false}", required = False)
+	parser.add_argument('-resx', type=int, default=1024, metavar="${resx}", required=False)
+	parser.add_argument('-resy', type=int, default=768, metavar="${resx}", required=False)
+
+def get_gamewnd_options(args):
+	opts = list()
+	if args.windowed:
+		opts.append('-windowed')
+		opts.append('-resx=%s' % args.resx)
+		opts.append('-resy=%s' % args.resy)	
+	return opts
 
 
 def add_log_options_argument(parser):

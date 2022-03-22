@@ -18,7 +18,6 @@ def get_project():
 	match = re.search(r'-project [a-zA-Z0-9]+', ' '.join(sys.argv))
 	if match:
 		project = match.group().split(' ')[1]
-
 	if not project:
 		return False
 	return project
@@ -59,7 +58,10 @@ def get_project_directories(workingdirectory = os.getcwd()) -> dict :
 	dirs['script_dir'] 		= '%s\\Script' 			% workingdirectory
 	dirs['shader_dir'] 		= '%s\\Shaders' 		% workingdirectory
 	dirs['saved_dir']		= '%s\\Saved' 			% workingdirectory
-	dirs['profile_dir']		= '%s\\Saved\\Profile' 	% workingdirectory
+
+	dirs['profile_dir']		= '%s\\Profile' 		% dirs['saved_dir']
+	dirs['stage_dir']		= '%s\\StagedBuilds' 	% dirs['saved_dir']
+	dirs['archive_dir']		= '%s\\Archive' 		% dirs['saved_dir']
 
 	dirs['client']			= '%s\\%s.exe' 		 	% (dirs['binary_dir'], project)
 	dirs['server']			= '%s\\%sServer.exe' 	% (dirs['binary_dir'], project)
@@ -86,7 +88,7 @@ def get_packaging_directories(workingdirectory = os.getcwd()):
 	dirs['binary_dir'] 	= '%s\\Binaries\\Win64' % game_dir
 
 	engine_dir 					= '%s\\Engine' 			% workingdirectory
-	dirs['engine_binary_dir'] 	= '%s\\Binaries\\Win64' % engine_dir
+	#dirs['engine_binary_dir'] 	= '%s\\Binaries\\Win64' % engine_dir
 
 	if not is_required_directory_valid(dirs):
 		return dict()
@@ -96,7 +98,6 @@ def get_packaging_directories(workingdirectory = os.getcwd()):
 	dirs['shader_dir'] 	= '%s\\Shaders' 		% game_dir
 	dirs['saved_dir'] 	= '%s\\Saved' 			% game_dir
 	dirs['profile_dir'] = '%s\\Saved\\Profile' 	% game_dir
-
 	if apptype == 'client':
 		dirs['client'] 			= '%s\\%s.exe' % (dirs['binary_dir'], project)
 	if apptype == 'server':

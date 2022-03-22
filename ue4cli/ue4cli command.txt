@@ -1,0 +1,16 @@
+
+profile commands
+	- trace
+		ue4cli -project='Cowboy' profile -asrun=game -profileunit='C:\Users\Administrator\Desktop\Profile\BvProfile.json' -profiletype=trace -profiler=csv
+
+
+
+
+	- all
+		ue4cli -project='Cowboy' profile -asrun=client -profiletype=all -profileunit='C:\Users\Administrator\Desktop\Profile\BvProfile.json' -log -logcmds='BvTechArtPerformanceMonitor on'
+
+
+
+
+package command
+	ue4cli -project='Cowboy' package -type=all -skipbuild -nopak -log
