@@ -4,6 +4,10 @@ def log(msg):
 def error(msg):
     print("\033[31m%s\033[0m" % msg)
 
+def fatal(msg):
+    print("\033[31m%s\033[0m" % msg)
+    exit()
+
 def warning(msg):
     print("\033[33m%s\033[0m" % msg)
 

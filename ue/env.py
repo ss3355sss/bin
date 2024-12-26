@@ -15,14 +15,12 @@ env = dict()
 def get_uproject(directory):
     uprojects = glob.glob(os.path.join(directory, '*.uproject'))
     if len(uprojects) == 0:
-        error("Failed to get valid uproject: %s" % directory)
-        exit()
+        fatal("Failed to get valid uproject: %s" % directory)
     return uprojects[0]
 
 def get_engine_association(uproject_path):
     if not os.path.exists(uproject_path):
-        error("Failed to get valid uproject_path: %s" % uproject_path)
-        exit()
+        fatal("Failed to get valid uproject_path: %s" % uproject_path)
 
     with open(uproject_path, 'r') as file:
         uproject_data = json.load(file)
@@ -37,12 +35,9 @@ def get_engine_directory(engine_association):
         value, reg_type = winreg.QueryValueEx(registry_key, engine_association)
         winreg.CloseKey(registry_key)
     except FileNotFoundError:
-        error(f"Registry path does not exist: {key_path, engine_association}")
-        exit()
-    
+        fatal(f"Registry path does not exist: {key_path, engine_association}")
     except PermissionError:
-        error(f"Permission to access the registry is denied: {key_path, engine_association}")
-        exit()
+        fatal(f"Permission to access the registry is denied: {key_path, engine_association}")
     return value
 
 def get_engine_version(version_path):
@@ -59,12 +54,10 @@ def get_engine_version(version_path):
             return major_version, minor_version, patch_version
     
     except FileNotFoundError:
-        error(f"Failed to get valid version_path: {version_path}")
-        exit()
+        fatal(f"Failed to get valid version_path: {version_path}")
     
     except json.JSONDecodeError:
-        print(f"JSON syntax error occurred in the file.: {version_path}")
-        exit()
+        fatal(f"JSON syntax error occurred in the file.: {version_path}")
 
 def validate(dictionary, is_requried):
     for key, val in dictionary.items():
@@ -78,22 +71,31 @@ def echo_env():
 	print('')
 
 try:
-    _required_['cwd']          = os.getcwd()
-    _required_['script_path']  = os.path.abspath(__file__)      
-    _required_['script_dir']   = os.path.dirname(_required_['script_path'])
+    _name_['cwd']          = os.getcwd()
+    _name_['script_path']  = os.path.abspath(__file__)      
+    _name_['script_dir']   = os.path.dirname(_name_['script_path'])
 
-    _required_['uproject'] = get_uproject(_required_['cwd'])
+    _required_['uproject'] = get_uproject(_name_['cwd'])
     _name_['project']  = os.path.splitext(os.path.basename(_required_['uproject']))[0]
     _name_['engine_association'] = get_engine_association(_required_['uproject'])
 
     _required_['engine_dir'] = get_engine_directory(_name_['engine_association'])
     _name_['engine_major_version'], _name_['engine_minor_version'], _name_['engine_patch_version'] = get_engine_version("%s\\Engine\\Build\\Build.version" % _required_['engine_dir'])
 
-    _required_['ubt'] = '%s\\Engine\\Binaries\\DotNet\\UnrealBuildTool\\UnrealBuildTool.dll' % _required_['engine_dir']
-    _required_['uat'] = '%s\\Engine\\Binaries\\DotNet\\AutomationTool\\AutomationTool.exe' % _required_['engine_dir']
+    if _name_['engine_major_version'] == 4:
+        _required_['ubt'] = '%s\\Engine\\Binaries\\DotNet\\UnrealBuildTool.exe' % _required_['engine_dir']
+        _required_['uat'] = '%s\\Engine\\Binaries\\DotNet\\AutomationTool.exe' % _required_['engine_dir']
+        pass
+    elif _name_['engine_major_version'] == 5:
+        _required_['ubt'] = '%s\\Engine\\Binaries\\DotNet\\UnrealBuildTool\\UnrealBuildTool.dll' % _required_['engine_dir']
+        _required_['uat'] = '%s\\Engine\\Binaries\\DotNet\\AutomationTool\\AutomationTool.exe' % _required_['engine_dir']
+    else:
+        fatal('failed to get valid engine version (%d.%d.%d)' % (_name_['engine_major_version'], _name_['engine_minor_version'], _name_['engine_patch_version']))
+
+
 
     if _name_['engine_major_version'] >= 5:
-        _optional_['unreal_insights'] = '%s\\Engine\\Binaries\\Win64\\UnrealInsights.exe'
+        _required_['unreal_insights'] = '%s\\Engine\\Binaries\\Win64\\UnrealInsights.exe' % _required_['engine_dir']
 
     if _name_['engine_minor_version'] >= 27:
         _optional_['csvcollect'] = '%s\\Engine\\Binaries\\DotNet\\CSVCollate.exe'

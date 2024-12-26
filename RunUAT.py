@@ -5,9 +5,7 @@ from ue.env import *
 def main(argc, argv):
 	exec = argv[0]
 	arguments = ' '.join(map(str, argv[1:]))
-	print(exec)
-	print(arguments)
-	echo_env()
+	#echo_env()
 
 if __name__ == "__main__":
 	main(len(sys.argv), sys.argv)
