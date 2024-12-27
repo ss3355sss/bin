@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from ue.env import *
+from script.env import *
 
 def main(argc, argv):
 	process = subprocess.Popen('%s' % env['unreal_insights'])
