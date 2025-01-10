@@ -1,10 +1,11 @@
 import os
 import glob
 import json
+import subprocess
 import winreg
 
 
-from ue.echo import *
+from script.echo import *
 
 
 _name_ = dict()
@@ -25,11 +26,19 @@ def get_engine_association(uproject_path):
     with open(uproject_path, 'r') as file:
         uproject_data = json.load(file)
     engine_association = uproject_data.get('EngineAssociation', 'Failed to get EngineAssociation Field.')
-    return engine_association 
+    if engine_association:
+        return engine_association
+    return "Undefined"
 
 def get_engine_directory(engine_association):
-    key_path = r"SOFTWARE\Epic Games\Unreal Engine\Builds"
-
+    if engine_association == 'Undefined':
+        # find engie dir form parent dir
+        parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+        return parent_dir
+    # find engie dir using regstry key
+    # HKEY_LOCAL_MACHINE : Installed Engine Dir
+    # HKEY_CURRENT_USER  : Custom Engine Dir
+    key_path = r"SOFTWARE\Epic Games\Unreal Engine\Builds"  
     try:
         registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
         value, reg_type = winreg.QueryValueEx(registry_key, engine_association)
@@ -38,7 +47,8 @@ def get_engine_directory(engine_association):
         fatal(f"Registry path does not exist: {key_path, engine_association}")
     except PermissionError:
         fatal(f"Permission to access the registry is denied: {key_path, engine_association}")
-    return value
+    return value    
+
 
 def get_engine_version(version_path):
     try:
@@ -65,6 +75,16 @@ def validate(dictionary, is_requried):
             print({key, val})
             raise FileNotFoundError(f"File or directory does not exist: {key, val}")
 
+def execute(exec, args):
+    if not os.path.exists(exec):
+        fatal('executable is not exists: %s' % exec)
+
+
+    process = subprocess.Popen('%s %s' % (exec, args))
+    if process.stderr:
+        fatal(process.stderr.readlines())
+    return process.communicate()
+
 def echo_env():
 	for key, val in env.items():
 		display('\t{0:<26} = {1}'.format(key, val))
@@ -85,35 +105,46 @@ try:
     if _name_['engine_major_version'] == 4:
         _required_['ubt'] = '%s\\Engine\\Binaries\\DotNet\\UnrealBuildTool.exe' % _required_['engine_dir']
         _required_['uat'] = '%s\\Engine\\Binaries\\DotNet\\AutomationTool.exe' % _required_['engine_dir']
-        pass
+
+        # unreal pak
+        _optional_['unreal_pak'] = '%s\\Engine\\Binaries\\Win64\\UnrealPak.exe' % _required_['engine_dir']
+
+        # csv tool
+        _optional_['csvcollect'] = '%s\\Engine\\Binaries\\DotNet\\CSVCollate.exe' % _required_['engine_dir']
+        _optional_['csvconvert'] = '%s\\Engine\\Binaries\\DotNet\\CsvConvert.exe' % _required_['engine_dir']
+        _optional_['csvfilter'] = '%s\\Engine\\Binaries\\DotNet\\CSVFilter.exe' % _required_['engine_dir']
+        _optional_['csvinfo'] = '%s\\Engine\\Binaries\\DotNet\\csvinfo.exe' % _required_['engine_dir']
+        _optional_['csvsplit'] = '%s\\Engine\\Binaries\\DotNet\\CSVSplit.exe' % _required_['engine_dir']
+        _optional_['csvtosvg'] = '%s\\Engine\\Binaries\\DotNet\\CSVToSVG.exe' % _required_['engine_dir']
+        _optional_['perfreport_tool'] = '%s\\Engine\\Binaries\\DotNet\\PerfreportTool.exe' % _required_['engine_dir']
+
     elif _name_['engine_major_version'] == 5:
         _required_['ubt'] = '%s\\Engine\\Binaries\\DotNet\\UnrealBuildTool\\UnrealBuildTool.dll' % _required_['engine_dir']
         _required_['uat'] = '%s\\Engine\\Binaries\\DotNet\\AutomationTool\\AutomationTool.exe' % _required_['engine_dir']
+
+        # unreal pak
+        _optional_['unreal_pak'] = '%s\\Engine\\Binaries\\Win64\\UnrealPak.exe' % _required_['engine_dir']
+
+        # csv tool
+        _optional_['csvcollect'] = '%s\\Engine\\Binaries\\DotNet\\CSVCollate.exe' % _required_['engine_dir']
+        _optional_['csvconvert'] = '%s\\Engine\\Binaries\\DotNet\\CsvConvert.exe' % _required_['engine_dir']
+        _optional_['csvfilter'] = '%s\\Engine\\Binaries\\DotNet\\CSVFilter.exe' % _required_['engine_dir']
+        _optional_['csvinfo'] = '%s\\Engine\\Binaries\\DotNet\\csvinfo.exe' % _required_['engine_dir']
+        _optional_['csvsplit'] = '%s\\Engine\\Binaries\\DotNet\\CSVSplit.exe' % _required_['engine_dir']
+        _optional_['csvtosvg'] = '%s\\Engine\\Binaries\\DotNet\\CSVToSVG.exe' % _required_['engine_dir']
+        _optional_['perfreport_tool'] = '%s\\Engine\\Binaries\\DotNet\\PerfreportTool.exe' % _required_['engine_dir']
+
+        # unreal insights
+        _optional_['unreal_insights'] = '%s\\Engine\\Binaries\\Win64\\UnrealInsights.exe' % _required_['engine_dir']
     else:
         fatal('failed to get valid engine version (%d.%d.%d)' % (_name_['engine_major_version'], _name_['engine_minor_version'], _name_['engine_patch_version']))
-
-
-
-    if _name_['engine_major_version'] >= 5:
-        _required_['unreal_insights'] = '%s\\Engine\\Binaries\\Win64\\UnrealInsights.exe' % _required_['engine_dir']
-
-    if _name_['engine_minor_version'] >= 27:
-        _optional_['csvcollect'] = '%s\\Engine\\Binaries\\DotNet\\CSVCollate.exe'
-        _optional_['csvconvert'] = '%s\\Engine\\Binaries\\DotNet\\CsvConvert.exe'
-        _optional_['csvfilter'] = '%s\\Engine\\Binaries\\DotNet\\CSVFilter.exe'
-        _optional_['csvinfo'] = '%s\\Engine\\Binaries\\DotNet\\csvinfo.exe'
-        _optional_['csvsplit'] = '%s\\Engine\\Binaries\\DotNet\\CSVSplit.exe'
-        _optional_['csvtosvg'] = '%s\\Engine\\Binaries\\DotNet\\CSVToSVG.exe'
-        _optional_['perfreport_tool'] = '%s\\Engine\\Binaries\\DotNet\\PerfreportTool.exe'
 
     validate(_required_, True)
     env = {**_name_, **_required_, **_optional_}
 
 except FileNotFoundError as e:
-    error(e)
-    exit()
+    fatal(e)
           
 except Exception as e:
-    error("Failed to set valid environment ue configuration: %s" % e)
-    exit()
+    fatal("Failed to set valid environment ue configuration: %s" % e)
 
